@@ -1,0 +1,36 @@
+﻿{% extends "base.html" %}
+{% from "_macros.html" import icon, head %}
+{% block title %}Model insights{% endblock %}
+{% block content %}
+{{ head('Model insights','Best model: ' ~ summary.best_model ~ '. Evaluated on ' ~ summary.n_test ~ ' held-out notes.','chart') }}
+<div class="container sect-s">
+ <div class="kpis reveal">
+  <div class="card kpi"><b>{{ '%.2f'|format(summary.test_accuracy*100) }}%</b><span>Accuracy</span></div>
+  <div class="card kpi"><b>{{ '%.2f'|format(summary.test_precision*100) }}%</b><span>Precision</span></div>
+  <div class="card kpi"><b>{{ '%.2f'|format(summary.test_recall*100) }}%</b><span>Recall (fakes caught)</span></div>
+  <div class="card kpi"><b>{{ '%.2f'|format(summary.test_f1*100) }}%</b><span>F1-score</span></div>
+ </div>
+ <div class="card reveal"><h3>Model comparison</h3><div class="table-wrap"><table class="tbl">
+  <tr><th>Model</th><th>Accuracy</th><th>Precision</th><th>Recall</th><th>F1</th><th>CV F1 (5-fold)</th></tr>
+  {% for m in comparison %}<tr><td>{{ m.model }}</td><td>{{ m.accuracy }}</td><td>{{ m.precision }}</td><td>{{ m.recall }}</td><td>{{ m.f1 }}</td><td>{{ m.cv_f1_mean }}</td></tr>{% endfor %}
+ </table></div></div>
+ <div class="card reveal" style="margin-top:20px"><h3>Robustness to noisy input</h3>
+  <p style="margin-bottom:10px">Gaussian noise was added to the test features. Performance drops as noise grows, which is the honest picture outside a clean dataset.</p>
+  <div class="table-wrap"><table class="tbl"><tr><th>Noise level</th><th>Accuracy</th><th>Fake recall</th></tr>
+  {% for r in robust %}<tr><td>{{ r.noise_level }}</td><td>{{ r.accuracy }}</td><td>{{ r.fake_recall }}</td></tr>{% endfor %}</table></div></div>
+ {% if img_info %}
+ <div class="card reveal" style="margin-top:20px"><h3>Photo model</h3>
+  <p>{{ img_info.best_model }} trained on {{ img_info.dataset_name }}: {{ img_info.n_total }} images ({{ img_info.n_genuine }} genuine, {{ img_info.n_fake }} fake), tested on {{ img_info.n_test }}.</p>
+  <div class="kpis" style="margin-top:14px">
+   <div class="card kpi"><b>{{ '%.1f'|format(img_info.accuracy*100) }}%</b><span>Accuracy</span></div>
+   <div class="card kpi"><b>{{ '%.1f'|format(img_info.precision*100) }}%</b><span>Precision</span></div>
+   <div class="card kpi"><b>{{ '%.1f'|format(img_info.recall*100) }}%</b><span>Recall</span></div>
+   <div class="card kpi"><b>{{ '%.1f'|format(img_info.balanced_accuracy*100) }}%</b><span>Balanced accuracy</span></div></div></div>
+ {% endif %}
+ <div class="imgs">
+  {% for f, cap in images %}<figure class="reveal"><img src="{{ url_for('output_file', name=f) }}" alt="{{ cap }}"><figcaption>{{ cap }}</figcaption></figure>{% endfor %}
+ </div>
+</div>
+{% endblock %}
+
+

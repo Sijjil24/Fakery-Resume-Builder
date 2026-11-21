@@ -1,0 +1,6 @@
+model,accuracy,precision,recall,f1,cv_f1_mean
+Voting Ensemble (LR+SVM+RF),1.0,1.0,1.0,1.0,0.999
+SVM (RBF),0.9963,0.9919,1.0,0.9959,0.999
+KNN (k=5),1.0,1.0,1.0,1.0,0.9949
+Logistic Regression,0.9852,0.9683,1.0,0.9839,0.9939
+Random Forest,0.9963,0.9919,1.0,0.9959,0.9908

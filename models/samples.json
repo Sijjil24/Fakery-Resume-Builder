@@ -1,0 +1,33 @@
+{
+  "genuine": {
+    "variance": 5.1302,
+    "skewness": 8.6703,
+    "curtosis": -2.8913,
+    "entropy": -1.5086
+  },
+  "fake": {
+    "variance": -6.3364,
+    "skewness": 9.2848,
+    "curtosis": 0.0143,
+    "entropy": -6.7844
+  },
+  "ranges": {
+    "variance": [
+      -7.0421,
+      6.8248
+    ],
+    "skewness": [
+      -13.7731,
+      12.9516
+    ],
+    "curtosis": [
+      -5.2861,
+      17.9274
+    ],
+    "entropy": [
+      -8.5482,
+      2.4495
+    ]
+  },
+  "best_model": "Voting Ensemble (LR+SVM+RF)"
+}

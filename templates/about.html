@@ -1,0 +1,24 @@
+﻿{% extends "base.html" %}
+{% from "_macros.html" import icon, head %}
+{% block title %}About{% endblock %}
+{% block content %}
+{{ head('About Fakery','An end-to-end machine-learning project: data, models, evaluation and a web app.','layers') }}
+<div class="container sect-s">
+ <div class="grid3">
+  <div class="card reveal"><div class="num">1</div><h3>Data</h3><p>UCI Banknote Authentication: {{ summary.n_train + summary.n_test }} notes after removing duplicates, with four wavelet-based image features.</p></div>
+  <div class="card reveal d1"><div class="num">2</div><h3>Models</h3><p>Logistic Regression, KNN, SVM, Random Forest and a soft-voting ensemble, chosen by 5-fold cross-validated F1.</p></div>
+  <div class="card reveal d2"><div class="num">3</div><h3>Evaluation</h3><p>Stratified 80/20 split, confusion matrix, permutation importance and a noise-robustness test.</p></div>
+ </div>
+ <div class="grid2" style="margin-top:20px">
+  <div class="card reveal"><h3>Two ways to scan</h3>
+   <p><b>Feature scan</b> uses the benchmark model on four pre-extracted numbers.</p>
+   <p style="margin-top:8px"><b>Photo scan</b> extracts texture, edge, frequency and colour features from your picture (a Haar wavelet, local binary patterns, FFT bands and HSV statistics) and feeds them to a model trained on real and fake note photos.</p></div>
+  <div class="card reveal d1"><h3>Honest limitations</h3>
+   <p>The benchmark dataset is small and very clean, so near-perfect scores are expected. The photo model only knows the currency and camera conditions it was trained on, and phone photos vary a lot. Treat every result as a second opinion, not proof.</p></div>
+ </div>
+ <div class="card reveal" style="margin-top:20px"><h3>Roadmap</h3>
+  <p>A CNN trained on a large photo dataset of local notes, a mobile camera app, explanation of why a note was flagged, and detection of individual security features.</p></div>
+</div>
+{% endblock %}
+
+

@@ -1,0 +1,39 @@
+﻿{% extends "base.html" %}
+{% from "_macros.html" import icon, head %}
+{% block title %}History{% endblock %}
+{% block content %}
+{{ head('Scan history','Every note you scan is saved here.','clock') }}
+<div class="container sect-s">
+ <div class="kpis">
+  <div class="card kpi"><b>{{ stats.total }}</b><span>Total scans</span></div>
+  <div class="card kpi"><b>{{ stats.genuine }}</b><span>Genuine</span></div>
+  <div class="card kpi"><b style="color:var(--bad)">{{ stats.fake }}</b><span>Fake</span></div>
+  <div class="card kpi"><a class="btn btn-ghost btn-sm" href="{{ url_for('history_csv') }}">Export CSV</a>
+   <form method="post" action="{{ url_for('history_clear') }}" style="display:inline" onsubmit="return confirm('Delete all your scan history?')"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-ghost btn-sm" type="submit">Clear</button></form></div>
+ </div>
+ <div class="card">
+ {% if scans %}
+  <div class="chips" id="flt"><button class="on" data-f="all">All</button><button data-f="Genuine">Genuine</button><button data-f="Fake">Fake</button></div>
+  <div class="table-wrap"><table class="tbl">
+   <tr><th>When</th><th>Type</th><th>Details</th><th>P(fake)</th><th>Verdict</th></tr>
+   {% for s in scans %}
+   <tr data-v="{{ s['verdict'] }}"><td>{{ s['created_at'] }}</td><td>{{ 'Photo' if s['kind']=='photo' else 'Features' }}</td>
+   <td>{% if s['kind']=='photo' %}{{ s['label'] or 'photo' }}{% else %}{{ s['variance'] }}, {{ s['skewness'] }}, {{ s['curtosis'] }}, {{ s['entropy'] }}{% endif %}</td>
+   <td>{{ '%.1f'|format(s['p_fake']*100) }}%</td><td><span class="badge {{ 'b-bad' if s['verdict']=='Fake' else 'b-ok' }}">{{ s['verdict'] }}</span></td></tr>
+   {% endfor %}
+  </table></div>
+ {% else %}
+  <div class="empty">{{ icon('clock',46) }}<p>No scans yet.</p><br><a class="btn btn-primary" href="{{ url_for('scan') }}">Scan your first note</a></div>
+ {% endif %}
+ </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.querySelectorAll('#flt button').forEach(function(b){b.onclick=function(){
+ document.querySelectorAll('#flt button').forEach(function(x){x.classList.remove('on')});b.classList.add('on');
+ document.querySelectorAll('tr[data-v]').forEach(function(r){r.style.display=(b.dataset.f==='all'||r.dataset.v===b.dataset.f)?'':'none'});}});
+</script>
+{% endblock %}
+
+

@@ -1,0 +1,158 @@
+﻿{% extends "base.html" %}
+{% from "_macros.html" import icon, head %}
+{% block title %}Scanner{% endblock %}
+{% block content %}
+{{ head('Scan a banknote','Upload a photo for an image check, or enter the four extracted features for the benchmark model.','scan') }}
+<div class="container sect-s">
+ <div class="tabs">
+  <button class="tab on" data-t="photo">{{ icon('image',18) }} Photo scan</button>
+  <button class="tab" data-t="features">{{ icon('chart',18) }} Feature scan</button>
+ </div>
+
+ <div id="tab-photo"><div class="dash">
+  <div class="card">
+   <h3>1. Add a photo of the note</h3>
+   <label class="dz" id="dz" for="file">
+    <div id="dzText">{{ icon('upload',42) }}<b>Drag and drop a photo here</b><span class="mu small">or click to browse (JPG, PNG, WEBP, max 8 MB)</span></div>
+    <div class="pwrap hidden" id="pwrap"><img id="prev" alt="Selected note"></div>
+   </label>
+   <input type="file" id="file" accept="image/*" hidden>
+   <div class="btnrow">
+    <label class="btn btn-ghost" for="cam">{{ icon('scan',18) }} Use camera</label>
+    <input type="file" id="cam" accept="image/*" capture="environment" hidden>
+    <button class="btn btn-primary grow" id="go" type="button" disabled>Analyse note</button>
+   </div>
+   <ul class="tips"><li>Lay the note flat on a plain, dark surface.</li><li>Use bright, even light with no glare or flash.</li><li>Fill the frame with one note, front side, in focus.</li></ul>
+  </div>
+  <div class="card">
+   <h3>2. Result</h3>
+   <div id="pEmpty" class="empty">{{ icon('shield',46) }}<p>Your result will appear here.</p></div>
+   <div id="pRes" class="hidden">
+    <div id="pVerdict" class="gwrap">
+     <div class="gauge" id="pg"><div><b id="pp">0%</b><span>probability fake</span></div></div>
+     <div><div class="verdict" id="pv"></div><div class="mu" id="pc"></div><span id="pr" class="badge"></span><div class="mu small" id="prel"></div></div>
+    </div>
+    <div id="pNo" class="notice hidden"><b>?? Showing image quality report only.</b> A genuine / fake verdict from the photo is not available yet. For a full AI verdict right now, switch to the <b>Feature Scan</b> tab above ? it uses the trained ML model and only needs 4 numbers.</div>
+    <h4>Image quality report</h4>
+    <div id="pBars"></div>
+    <ul class="warns" id="pWarn"></ul>
+   </div>
+   <p class="mu small" style="margin-top:16px">{% if img_info %}Photo model: {{ img_info.best_model }} &middot; trained on {{ img_info.dataset_name }} ({{ img_info.n_total }} images) &middot; {{ '%.1f'|format(img_info.accuracy*100) }}% test accuracy.{% else %}Photo model: not trained yet.{% endif %} Photos are analysed in memory and never stored.</p>
+  </div>
+ </div></div>
+
+ <div id="tab-features" class="hidden">
+  <div class="dash">
+   <div class="card">
+    <h3>Note features</h3>
+    <div class="btnrow"><button class="btn btn-ghost btn-sm" id="bGen" type="button">Load genuine sample</button><button class="btn btn-ghost btn-sm" id="bFake" type="button">Load fake sample</button></div>
+    {% for f in fields %}
+    <div class="field"><div class="frow"><label for="n_{{ f.name }}">{{ f.label }}</label><input class="nm" type="number" step="0.01" id="n_{{ f.name }}" value="{{ f.val }}"></div>
+     <input type="range" id="r_{{ f.name }}" min="{{ f.min }}" max="{{ f.max }}" step="0.01" value="{{ f.val }}"><small>{{ f.hint }}</small></div>
+    {% endfor %}
+    <button class="btn btn-primary btn-block" id="scan" type="button">Scan note</button>
+   </div>
+   <div class="card">
+    <h3>Result</h3>
+    <div id="empty" class="empty">{{ icon('shield',46) }}<p>Press <b>Scan note</b> to see the verdict.</p></div>
+    <div id="result" class="hidden"><div class="gwrap">
+     <div class="gauge" id="gauge"><div><b id="gpct">0%</b><span>probability fake</span></div></div>
+     <div><div class="verdict" id="verdict"></div><div class="mu" id="conf"></div><span id="risk" class="badge"></span><p class="mu small" id="similar"></p></div></div></div>
+   </div>
+  </div>
+  <div class="card" style="margin-top:20px">
+   <div class="mapbar"><h3 style="margin:0">Where does this note sit among known notes?</h3>
+    <select id="axes"><option value="0,1">variance vs skewness</option><option value="0,2">variance vs curtosis</option><option value="1,2">skewness vs curtosis</option><option value="2,3">curtosis vs entropy</option></select></div>
+   <div class="mapbox"><canvas id="map"></canvas></div>
+  </div>
+ </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const CSRF=document.querySelector('meta[name=csrf]').content;
+const REF={{ ref|tojson }}, SAMPLES={{ samples|tojson }}, FEATS=['variance','skewness','curtosis','entropy'];
+const cv=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+let chart=null,lastPt=null;
+
+/* tabs */
+function showTab(t){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+ $('tab-photo').classList.toggle('hidden',t!=='photo');$('tab-features').classList.toggle('hidden',t!=='features');
+ history.replaceState(null,'','#'+t);if(t==='features')buildChart();}
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>showTab(b.dataset.t));
+if(location.hash==='#features')showTab('features');
+
+/* ---------- photo scan ---------- */
+let chosen=null;
+function pick(f){if(!f)return;
+ if(!/^image\//.test(f.type)){toast('Please choose an image file.','error');return;}
+ if(f.size>8*1024*1024){toast('Image must be under 8 MB.','error');return;}
+ chosen=f;$('prev').src=URL.createObjectURL(f);$('pwrap').classList.remove('hidden');$('dzText').classList.add('hidden');$('go').disabled=false;}
+$('file').onchange=e=>pick(e.target.files[0]);$('cam').onchange=e=>pick(e.target.files[0]);
+['dragover','dragenter'].forEach(ev=>$('dz').addEventListener(ev,e=>{e.preventDefault();$('dz').classList.add('over')}));
+['dragleave','drop'].forEach(ev=>$('dz').addEventListener(ev,e=>{e.preventDefault();$('dz').classList.remove('over')}));
+$('dz').addEventListener('drop',e=>pick(e.dataTransfer.files[0]));
+
+const METRICS=[['Sharpness','sharpness'],['Brightness','brightness'],['Contrast','contrast'],['Edge detail','edge_detail'],['Texture richness','texture']];
+function showPhoto(d){
+ $('pEmpty').classList.add('hidden');$('pRes').classList.remove('hidden');
+ if(d.model_ready){
+  $('pVerdict').classList.remove('hidden');$('pNo').classList.add('hidden');
+  const bad=d.verdict==='Fake';
+  $('pg').style.setProperty('--gc',bad?'var(--bad)':'var(--br)');
+  requestAnimationFrame(()=>$('pg').style.setProperty('--p',(d.p_fake*100).toFixed(1)));
+  $('pp').textContent=(d.p_fake*100).toFixed(1)+'%';
+  $('pv').textContent=bad?'LIKELY FAKE':'LIKELY GENUINE';$('pv').className='verdict '+(bad?'bad':'ok');
+  $('pc').textContent='Confidence '+(d.confidence*100).toFixed(1)+'%';
+  $('pr').textContent=d.risk;$('pr').className='badge '+(d.risk.indexOf('Uncertain')===0?'b-warn':(bad?'b-bad':'b-ok'));
+  $('prel').textContent='Photo quality: '+d.reliability;
+ }else{$('pVerdict').classList.add('hidden');$('pNo').classList.remove('hidden');}
+ $('pBars').innerHTML=METRICS.map(m=>'<div class="bar"><div class="t"><span>'+m[0]+'</span><span>'+d.report[m[1]]+'%</span></div><div class="b"><i style="width:0" data-w="'+d.report[m[1]]+'"></i></div></div>').join('');
+ setTimeout(()=>document.querySelectorAll('#pBars i').forEach(i=>i.style.width=i.dataset.w+'%'),50);
+ $('pWarn').innerHTML=d.report.warnings.map(w=>'<li>&#9888; '+w+'</li>').join('');
+}
+$('go').onclick=async()=>{
+ if(!chosen)return;const btn=$('go');btn.disabled=true;btn.innerHTML='<span class="spin"></span> Analysing...';
+ $('pwrap').classList.add('scanning');
+ try{const fd=new FormData();fd.append('image',chosen);
+  const out=await Promise.all([fetch('{{ url_for("api_predict_image") }}',{method:'POST',headers:{'X-CSRF-Token':CSRF},body:fd}),new Promise(r=>setTimeout(r,1300))]);
+  const res=out[0],d=await res.json();if(!res.ok)throw new Error(d.error||'Something went wrong');showPhoto(d);
+ }catch(e){toast(e.message,'error');}
+ finally{$('pwrap').classList.remove('scanning');btn.disabled=false;btn.textContent='Analyse note';}
+};
+
+/* ---------- feature scan ---------- */
+FEATS.forEach(f=>{const r=$('r_'+f),n=$('n_'+f);r.oninput=()=>n.value=r.value;n.oninput=()=>r.value=n.value;});
+function load(s){FEATS.forEach(f=>{$('r_'+f).value=s[f];$('n_'+f).value=s[f];});}
+$('bGen').onclick=()=>load(SAMPLES.genuine);$('bFake').onclick=()=>load(SAMPLES.fake);
+function buildChart(){
+ const ab=$('axes').value.split(',').map(Number),a=ab[0],b=ab[1],g=[],k=[];
+ REF.forEach(r=>{(r[4]===1?k:g).push({x:r[a],y:r[b]});});
+ if(chart)chart.destroy();
+ const ds=[{label:'Genuine',data:g,backgroundColor:cv('--br'),pointRadius:3},{label:'Fake',data:k,backgroundColor:cv('--bad'),pointRadius:3}];
+ if(lastPt)ds.push({label:'Your note',data:[{x:lastPt[FEATS[a]],y:lastPt[FEATS[b]]}],backgroundColor:cv('--gd'),borderColor:cv('--tx'),borderWidth:2,pointStyle:'star',pointRadius:15});
+ const ax=t=>({title:{display:true,text:t,color:cv('--mu')},ticks:{color:cv('--mu')},grid:{color:cv('--line')}});
+ chart=new Chart($('map'),{type:'scatter',data:{datasets:ds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:cv('--tx')}}},scales:{x:ax(FEATS[a]),y:ax(FEATS[b])}}});
+}
+$('axes').onchange=buildChart;
+window.addEventListener('themechange',()=>{if(!$('tab-features').classList.contains('hidden'))buildChart();});
+function show(d,pt){lastPt=pt;const bad=d.verdict==='Fake';
+ $('gauge').style.setProperty('--gc',bad?'var(--bad)':'var(--br)');
+ requestAnimationFrame(()=>$('gauge').style.setProperty('--p',(d.p_fake*100).toFixed(1)));
+ $('gpct').textContent=(d.p_fake*100).toFixed(1)+'%';
+ $('verdict').textContent=bad?'FAKE NOTE DETECTED':'GENUINE NOTE';$('verdict').className='verdict '+(bad?'bad':'ok');
+ $('conf').textContent='Confidence '+(d.confidence*100).toFixed(1)+'%';
+ $('risk').textContent=d.risk;$('risk').className='badge '+(d.risk.indexOf('Uncertain')===0?'b-warn':(bad?'b-bad':'b-ok'));
+ $('similar').textContent=d.similar_fake+' of the '+d.k+' most similar known notes were fake.';
+ $('result').classList.remove('hidden');$('empty').classList.add('hidden');buildChart();}
+$('scan').onclick=async()=>{const body={};FEATS.forEach(f=>body[f]=parseFloat($('n_'+f).value));
+ const btn=$('scan');btn.disabled=true;btn.innerHTML='<span class="spin"></span> Scanning...';
+ try{const res=await fetch('{{ url_for("api_predict") }}',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':CSRF},body:JSON.stringify(body)});
+  const d=await res.json();if(!res.ok)throw new Error(d.error||'Something went wrong');show(d,body);
+ }catch(e){toast(e.message,'error');}finally{btn.disabled=false;btn.textContent='Scan note';}};
+</script>
+{% endblock %}
+
+

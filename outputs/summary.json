@@ -1,0 +1,10 @@
+{
+  "best_model": "Voting Ensemble (LR+SVM+RF)",
+  "test_accuracy": 1.0,
+  "test_precision": 1.0,
+  "test_recall": 1.0,
+  "test_f1": 1.0,
+  "n_train": 1078,
+  "n_test": 270,
+  "duplicates_removed": 24
+}

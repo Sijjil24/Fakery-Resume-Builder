@@ -1,0 +1,54 @@
+﻿{% extends "base.html" %}
+{% from "_macros.html" import icon, head %}
+{% block title %}Spot a fake note{% endblock %}
+{% block content %}
+{{ head('How to spot a fake note','The quick physical checks to do alongside any software check.','book') }}
+<div class="container sect-s">
+ <div class="banner reveal">
+  <h2>Feel. Look. Tilt.</h2>
+  <p>Three checks that take ten seconds. If any of them feels wrong, treat the note as suspicious.</p>
+  <div class="steps"><span>1. Feel</span><span>2. Look</span><span>3. Tilt</span></div>
+ </div>
+ <div class="grid3" style="margin-top:20px">
+  <div class="card hov reveal"><div class="ico">{{ icon('scan') }}</div><h3>Paper and raised print</h3><p>Genuine banknote paper feels crisp and different from normal paper. Some parts of the print are raised and can be felt with a fingertip.</p></div>
+  <div class="card hov reveal d1"><div class="ico">{{ icon('eye') }}</div><h3>Watermark</h3><p>Hold the note up to the light. A faint image should appear and look smooth and detailed, not printed on the surface.</p></div>
+  <div class="card hov reveal d2"><div class="ico">{{ icon('layers') }}</div><h3>Security thread</h3><p>A thin thread or strip runs through the paper. Against the light it should look like a continuous line.</p></div>
+  <div class="card hov reveal"><div class="ico">{{ icon('zap') }}</div><h3>Colour-shifting ink</h3><p>On many notes, some numerals or patches change colour when you tilt the note.</p></div>
+  <div class="card hov reveal d1"><div class="ico">{{ icon('image') }}</div><h3>Fine detail</h3><p>Genuine printing has sharp, tiny details. Blurry lines, smudges or flat colours are warning signs.</p></div>
+  <div class="card hov reveal d2"><div class="ico">{{ icon('lock') }}</div><h3>Serial numbers</h3><p>Check the numbers are evenly spaced and aligned. Two notes with the same serial number cannot both be real.</p></div>
+ </div>
+ <p class="mu small" style="margin:18px 0">Security features differ by country and denomination. Always follow your central bank's official guide.</p>
+
+ <div class="card reveal" style="max-width:720px;margin:30px auto 0">
+  <h3>Interactive checklist</h3>
+  <p style="margin-bottom:10px">Tick what you were able to confirm on the note in your hand.</p>
+  <div class="checks" id="cl">
+   <label><input type="checkbox"> Paper feels right and print is raised where expected</label>
+   <label><input type="checkbox"> Watermark is visible against the light</label>
+   <label><input type="checkbox"> Security thread is continuous</label>
+   <label><input type="checkbox"> Ink changes colour when tilted</label>
+   <label><input type="checkbox"> Fine print is sharp, not blurry</label>
+   <label><input type="checkbox"> Serial numbers are neat and aligned</label>
+  </div>
+  <div class="gwrap" style="margin-top:18px"><div class="gauge" id="cg"><div><b id="cn">0/6</b><span>checks passed</span></div></div>
+   <div><div class="verdict" id="cv">Start checking</div><p id="cm" class="mu small"></p></div></div>
+ </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+var boxes=document.querySelectorAll('#cl input');
+function upd(){var n=0;boxes.forEach(function(b){if(b.checked)n++});
+ var g=document.getElementById('cg');g.style.setProperty('--p',n/6*100);
+ g.style.setProperty('--gc',n>=5?'var(--br)':(n>=3?'var(--wn)':'var(--bad)'));
+ document.getElementById('cn').textContent=n+'/6';
+ var v=document.getElementById('cv'),m=document.getElementById('cm');
+ if(n==0){v.textContent='Start checking';v.className='verdict';m.textContent='';}
+ else if(n==6){v.textContent='Looks consistent';v.className='verdict ok';m.textContent='All checks passed. Still verify through official channels if in doubt.';}
+ else if(n>=4){v.textContent='Mostly consistent';v.className='verdict ok';m.textContent='Re-check the items you could not confirm.';}
+ else{v.textContent='Suspicious';v.className='verdict bad';m.textContent='Too many checks missing. Do not accept the note; take it to a bank.';}}
+boxes.forEach(function(b){b.onchange=upd});
+</script>
+{% endblock %}
+
+

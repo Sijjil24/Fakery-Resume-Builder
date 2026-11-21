@@ -1,0 +1,86 @@
+﻿{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block title %}AI Banknote Authenticity Checker{% endblock %}
+{% block content %}
+<section class="hero"><div class="container hero-grid">
+ <div>
+  <h1 class="big">Spot <span class="grad">fake banknotes</span> in seconds.</h1>
+  <p class="lead">Upload a photo or enter note features. Fakery analyses the note with an ensemble of machine-learning models and returns a verdict with a confidence score.</p>
+  <div class="cta">
+   <a class="btn btn-primary" href="{{ url_for('scan') }}">{{ icon('scan',18) }} Scan a note</a>
+   <a class="btn btn-ghost" href="{{ url_for('guest') }}">Try the demo as guest</a>
+  </div>
+ </div>
+ <div class="noteart">
+  <div class="note n2"></div>
+  <div class="note n1"><div class="guil"></div><div class="thread"></div><div class="amt">500</div><div class="port"></div><div class="serial">7QK 482915</div><div class="scan"></div></div>
+  <span class="chipf c1">Texture &#10003;</span><span class="chipf c2">Print pattern &#10003;</span><span class="chipf c3">Ink colour &#10003;</span>
+ </div>
+</div></section>
+
+<div class="container"><div class="trust"><span>Python</span><span>scikit-learn</span><span>Flask</span><span>SQLite</span><span>Chart.js</span><span>100% free stack</span></div></div>
+
+<section class="container reveal"><div class="card stats">
+ <div><b data-count="{{ '%.2f'|format(summary.test_accuracy*100) }}" data-dec="1" data-suf="%">0</b><span>Test accuracy (UCI benchmark)</span></div>
+ <div><b data-count="{{ '%.2f'|format(summary.test_recall*100) }}" data-dec="1" data-suf="%">0</b><span>Fakes caught (recall)</span></div>
+ <div><b data-count="{{ summary.n_train + summary.n_test }}">0</b><span>Notes analysed</span></div>
+ <div><b data-count="5">0</b><span>Models compared</span></div>
+</div></section>
+
+<section class="sect container" id="features">
+ <div class="center reveal"><h2>Everything you need to verify a note</h2><p class="sub">A complete authenticity toolkit: data, models and a web app, built end to end.</p></div>
+ <div class="grid4">
+  <div class="card hov reveal"><div class="ico">{{ icon('image') }}</div><h3>Photo scan</h3><p>Drop in a picture of a note. Get an image-quality report and, with a trained photo model, a verdict.</p></div>
+  <div class="card hov reveal d1"><div class="ico">{{ icon('scan') }}</div><h3>Instant verdict</h3><p>Probability gauge, confidence, and a risk label for every scan.</p></div>
+  <div class="card hov reveal d2"><div class="ico">{{ icon('map') }}</div><h3>Note map</h3><p>See where your note sits among known genuine and fake notes.</p></div>
+  <div class="card hov reveal d3"><div class="ico">{{ icon('eye') }}</div><h3>Similar notes</h3><p>Shows how many of the 15 closest known notes were fake: a simple, honest explanation.</p></div>
+  <div class="card hov reveal"><div class="ico">{{ icon('layers') }}</div><h3>Batch checking</h3><p>Upload a CSV of many notes and download the results.</p></div>
+  <div class="card hov reveal d1"><div class="ico">{{ icon('clock') }}</div><h3>Scan history</h3><p>Every scan is saved to your account. Export it as CSV.</p></div>
+  <div class="card hov reveal d2"><div class="ico">{{ icon('chart') }}</div><h3>Model insights</h3><p>Model comparison, confusion matrix, feature importance and a noise test.</p></div>
+  <div class="card hov reveal d3"><div class="ico">{{ icon('book') }}</div><h3>Learn the signs</h3><p>A guide and checklist for checking security features by hand.</p></div>
+ </div>
+</section>
+
+<section class="sect container">
+ <div class="center reveal"><h2>How it works</h2><p class="sub">Three simple steps.</p></div>
+ <div class="grid3">
+  <div class="card hov reveal"><div class="num">1</div><h3>Add a note</h3><p>Upload a photo, or enter the four image features (variance, skewness, curtosis, entropy).</p></div>
+  <div class="card hov reveal d1"><div class="num">2</div><h3>Models analyse it</h3><p>A voting ensemble of Logistic Regression, SVM and Random Forest estimates the chance the note is fake.</p></div>
+  <div class="card hov reveal d2"><div class="num">3</div><h3>Get a clear result</h3><p>Verdict, confidence, risk label, and the note's position on the map.</p></div>
+ </div>
+</section>
+
+<section class="container reveal"><div class="banner">
+ <h2>Feel. Look. Tilt.</h2>
+ <p>Software is a second opinion, not a replacement for your eyes and fingers. Learn the three quick physical checks that catch most fake notes.</p>
+ <div class="steps"><span>Feel the paper and raised print</span><span>Look through the note at the light</span><span>Tilt it to see colour shift</span></div>
+ <a class="btn btn-gold" href="{{ url_for('learn') }}">Open the guide</a>
+</div></section>
+
+<section class="sect container">
+ <div class="center reveal"><h2>Who is it for?</h2></div>
+ <div class="grid3" style="margin-top:26px">
+  <div class="card hov reveal"><div class="ico">{{ icon('user') }}</div><h3>Cashiers and small shops</h3><p>Use it as a quick second opinion next to the manual checks.</p></div>
+  <div class="card hov reveal d1"><div class="ico">{{ icon('book') }}</div><h3>Students and researchers</h3><p>Explore a complete ML pipeline with honest evaluation and a robustness test.</p></div>
+  <div class="card hov reveal d2"><div class="ico">{{ icon('layers') }}</div><h3>Developers</h3><p>Clean Flask code, a JSON API and a reusable image-feature extractor.</p></div>
+ </div>
+</section>
+
+<section class="sect container" id="faq">
+ <div class="center reveal"><h2>Frequently asked questions</h2></div>
+ <div style="max-width:780px;margin:24px auto 0" class="reveal">
+  <details><summary>Is it really that accurate?</summary><p>On the benchmark dataset used here, yes: near-perfect on the held-out test set. That dataset is small and clean, so real-world accuracy will be lower. The Insights page includes a noise test showing how performance drops on messy input.</p></details>
+  <details><summary>How does Photo scan work?</summary><p>The photo is converted to numbers describing print texture, edges, colour and frequency patterns. A model trained on real and fake note photos predicts the result. Until a photo model is trained, the page only shows the image-quality report.</p></details>
+  <details><summary>Which currency does it support?</summary><p>The feature model uses the public UCI Banknote Authentication dataset. The photo model supports whichever currency it was trained on. Fakery is not certified for any currency.</p></details>
+  <details><summary>Are my photos stored?</summary><p>No. Photos are analysed in memory and discarded. Only the result is saved to your history.</p></details>
+  <details><summary>Is it free?</summary><p>Yes. The whole project is built with free and open-source tools.</p></details>
+ </div>
+</section>
+
+<section class="container reveal"><div class="banner" style="text-align:center">
+ <h2>Ready to check a note?</h2><p style="margin:0 auto 22px">Create a free account or jump in with the guest demo.</p>
+ <a class="btn btn-gold" href="{{ url_for('signup') }}">Create free account</a>
+</div></section>
+{% endblock %}
+
+

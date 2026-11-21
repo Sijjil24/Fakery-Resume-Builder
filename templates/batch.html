@@ -1,0 +1,34 @@
+﻿{% extends "base.html" %}
+{% from "_macros.html" import icon, head %}
+{% block title %}Batch check{% endblock %}
+{% block content %}
+{{ head('Batch check','Upload a CSV with the columns variance, skewness, curtosis, entropy and check many notes at once.','layers') }}
+<div class="container sect-s">
+ <div class="card">
+  <form method="post" enctype="multipart/form-data">
+   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+   <label class="l" for="file">CSV file</label><input type="file" id="file" name="file" accept=".csv" required>
+   <div class="btnrow"><button class="btn btn-primary" type="submit">Check notes</button><a class="btn btn-ghost" href="{{ url_for('sample_csv') }}">Download a sample CSV to try</a></div>
+  </form>
+ </div>
+ {% if rows %}
+ <div class="kpis" style="margin-top:20px">
+  <div class="card kpi"><b>{{ counts.total }}</b><span>Notes checked</span></div>
+  <div class="card kpi"><b>{{ counts.genuine }}</b><span>Genuine</span></div>
+  <div class="card kpi"><b style="color:var(--bad)">{{ counts.fake }}</b><span>Fake</span></div>
+  <div class="card kpi"><button class="btn btn-ghost btn-sm" id="dl" type="button">Download results</button></div>
+ </div>
+ <div class="card"><div class="table-wrap"><table class="tbl">
+  <tr><th>#</th><th>Variance</th><th>Skewness</th><th>Curtosis</th><th>Entropy</th><th>P(fake)</th><th>Verdict</th></tr>
+  {% for r in rows %}<tr><td>{{ loop.index }}</td><td>{{ r.variance }}</td><td>{{ r.skewness }}</td><td>{{ r.curtosis }}</td><td>{{ r.entropy }}</td><td>{{ r.fake_probability }}</td><td><span class="badge {{ 'b-bad' if r.verdict=='Fake' else 'b-ok' }}">{{ r.verdict }}</span></td></tr>{% endfor %}
+ </table></div>
+ {% if counts.total > rows|length %}<p class="mu small" style="margin-top:10px">Showing the first {{ rows|length }} rows. The download has all {{ counts.total }}.</p>{% endif %}</div>
+ <textarea id="csvdata" class="hidden">{{ csv_text }}</textarea>
+ {% endif %}
+</div>
+{% endblock %}
+{% block scripts %}{% if rows %}
+<script>document.getElementById('dl').onclick=function(){var b=new Blob([document.getElementById('csvdata').value],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='Fakery_results.csv';a.click();};</script>
+{% endif %}{% endblock %}
+
+

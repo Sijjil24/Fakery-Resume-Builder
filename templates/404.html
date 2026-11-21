@@ -1,0 +1,8 @@
+﻿{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block title %}Page not found{% endblock %}
+{% block content %}
+<div class="container center" style="padding:110px 0"><div class="empty">{{ icon('alert',56) }}<h1 style="font-size:3rem">404</h1><p>That page does not exist.</p><br><a class="btn btn-primary" href="{{ url_for('index') }}">Back to home</a></div></div>
+{% endblock %}
+
+

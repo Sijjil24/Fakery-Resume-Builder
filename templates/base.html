@@ -1,0 +1,66 @@
+﻿{% from "_macros.html" import icon %}
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="csrf" content="{{ csrf_token() }}">
+<title>{% block title %}Home{% endblock %} | Fakery</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iOCIgZmlsbD0iIzFlYzk3ZiIvPjx0ZXh0IHg9IjE2IiB5PSIyMyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1zaXplPSIyMCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZmlsbD0iIzAzMTQwYyI+RjwvdGV4dD48L3N2Zz4=">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script>(function(){var h=document.documentElement;h.classList.add('js');try{var t=localStorage.getItem('ng-theme');if(!t){t=window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'}h.setAttribute('data-theme',t)}catch(e){}})()</script>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=2">
+</head>
+<body>
+{% set ep = request.endpoint %}
+<div class="announce" id="announce"><span>{{ icon('zap',16) }} New: Photo Scan. Upload a picture of a banknote and get an instant analysis.</span><a href="{{ url_for('scan') }}">Try it</a><button id="annClose" aria-label="Close">{{ icon('x',16) }}</button></div>
+<header class="nav"><div class="container nav-in">
+ <a class="logo" href="{{ url_for('index') }}"><span class="lg">{{ icon('shield',26) }}</span><span>Fake<b>ry</b></span></a>
+ <button class="burger" id="navBtn" aria-label="Menu">{{ icon('menu',24) }}</button>
+ <nav class="links" id="links">
+  <a class="{{ 'on' if ep=='index' }}" href="{{ url_for('index') }}">Home</a>
+  <a class="{{ 'on' if ep=='scan' }}" href="{{ url_for('scan') }}">Scan</a>
+  <a class="{{ 'on' if ep=='learn' }}" href="{{ url_for('learn') }}">Learn</a>
+  <a class="{{ 'on' if ep=='insights' }}" href="{{ url_for('insights') }}">Insights</a>
+  <a class="{{ 'on' if ep=='about' }}" href="{{ url_for('about') }}">About</a>
+  <a class="{{ 'on' if ep=='contact' }}" href="{{ url_for('contact') }}">Contact</a>
+  <span class="sp"></span>
+  <button class="iconbtn" id="themeBtn" title="Switch dark / light mode" aria-label="Toggle theme"><span class="i-sun">{{ icon('sun',20) }}</span><span class="i-moon">{{ icon('moon',20) }}</span></button>
+  {% if user %}
+  <div class="umenu" id="umenu">
+   <button class="ubtn" id="userBtn"><span class="av">{{ user['name'][:1]|upper }}</span>{{ user['name'].split(' ')[0] }}</button>
+   <div class="drop-menu">
+    <div class="who"><b>{{ user['name'] }}</b><div class="mu small">{{ 'Guest demo' if user['provider']=='guest' else user['email'] }}</div></div>
+    <a href="{{ url_for('scan') }}">{{ icon('scan',18) }} Scanner</a>
+    <a href="{{ url_for('batch') }}">{{ icon('layers',18) }} Batch check</a>
+    <a href="{{ url_for('history') }}">{{ icon('clock',18) }} History</a>
+    <a href="{{ url_for('account') }}">{{ icon('user',18) }} Account</a>
+    <a href="{{ url_for('logout') }}">{{ icon('lock',18) }} Log out</a>
+   </div>
+  </div>
+  {% else %}
+  <a class="btn btn-ghost" href="{{ url_for('login') }}">Log in</a>
+  <a class="btn btn-primary" href="{{ url_for('signup') }}">Get started</a>
+  {% endif %}
+ </nav>
+</div></header>
+<div class="toasts" id="toasts">{% with msgs = get_flashed_messages(with_categories=true) %}{% for c, m in msgs %}<div class="toast {{ c }}">{{ m }}</div>{% endfor %}{% endwith %}</div>
+<main>{% block content %}{% endblock %}</main>
+<footer><div class="container">
+ <div class="fgrid">
+  <div><a class="logo" href="{{ url_for('index') }}" style="display:flex;padding:0"><span class="lg">{{ icon('shield',26) }}</span><span>Fake<b>ry</b></span></a>
+   <p class="mu small" style="margin-top:12px;max-width:280px">Machine-learning banknote authenticity checker. Built with free and open-source tools.</p></div>
+  <div><h5>Product</h5><a href="{{ url_for('scan') }}">Scanner</a><a href="{{ url_for('batch') }}">Batch check</a><a href="{{ url_for('history') }}">History</a><a href="{{ url_for('insights') }}">Insights</a></div>
+  <div><h5>Learn</h5><a href="{{ url_for('learn') }}">Spot a fake note</a><a href="{{ url_for('about') }}">How it works</a><a href="{{ url_for('index') }}#faq">FAQ</a></div>
+  <div><h5>Company</h5><a href="{{ url_for('about') }}">About</a><a href="{{ url_for('contact') }}">Contact</a><a href="{{ url_for('login') }}">Log in</a></div>
+ </div>
+ <div class="fbot"><span>&copy; 2026 Fakery. Educational project.</span><span>Not a substitute for official currency verification.</span></div>
+</div></footer>
+<script src="{{ url_for('static', filename='app.js') }}?v=2"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>
+
+
+

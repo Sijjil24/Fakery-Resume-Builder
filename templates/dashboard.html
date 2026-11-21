@@ -1,0 +1,127 @@
+﻿{% extends "base.html" %}
+{% block title %}Scan a note{% endblock %}
+{% block content %}
+<div class="container page">
+ <h1>Scan a banknote</h1>
+ <p class="sub">Enter the four image features, or load a sample, then press Scan.</p>
+ <div class="dash">
+  <div class="card">
+   <h3>Note features</h3>
+   <div class="btnrow">
+    <button class="btn btn-ghost btn-sm" id="bGen" type="button">Load genuine sample</button>
+    <button class="btn btn-ghost btn-sm" id="bFake" type="button">Load fake sample</button>
+   </div>
+   {% for f in fields %}
+   <div class="field">
+    <div class="frow"><label for="n_{{ f.name }}">{{ f.label }}</label>
+     <input class="num" type="number" step="0.01" id="n_{{ f.name }}" value="{{ f.val }}"></div>
+    <input type="range" id="r_{{ f.name }}" min="{{ f.min }}" max="{{ f.max }}" step="0.01" value="{{ f.val }}">
+    <small>{{ f.hint }}</small>
+   </div>
+   {% endfor %}
+   <button class="btn btn-primary btn-block" id="scan" type="button">Scan note</button>
+  </div>
+
+  <div class="card">
+   <h3>Result</h3>
+   <div id="empty" class="empty"><div class="big">&#128737;</div>Press <b>Scan note</b> to see the verdict.</div>
+   <div id="result" class="hidden">
+    <div class="gwrap">
+     <div class="gauge" id="gauge"><div><b id="gpct">0%</b><span>probability fake</span></div></div>
+     <div>
+      <div class="verdict" id="verdict"></div>
+      <div class="muted" id="conf"></div>
+      <span id="risk" class="badge"></span>
+      <p class="muted" id="similar" style="font-size:.92rem"></p>
+     </div>
+    </div>
+   </div>
+  </div>
+ </div>
+
+ <div class="card" style="margin-top:20px">
+  <div class="mapbar"><h3 style="margin:0">Where does this note sit among known notes?</h3>
+   <select id="axes">
+    <option value="0,1">variance vs skewness</option>
+    <option value="0,2">variance vs curtosis</option>
+    <option value="1,2">skewness vs curtosis</option>
+    <option value="2,3">curtosis vs entropy</option>
+   </select></div>
+  <div class="mapbox"><canvas id="map"></canvas></div>
+ </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+const REF = {{ ref|tojson }};
+const SAMPLES = {{ samples|tojson }};
+const FEATS = ['variance','skewness','curtosis','entropy'];
+const el = id => document.getElementById(id);
+let chart = null, lastPt = null;
+
+FEATS.forEach(f => {
+  const r = el('r_'+f), n = el('n_'+f);
+  r.oninput = () => n.value = r.value;
+  n.oninput = () => r.value = n.value;
+});
+function load(s){ FEATS.forEach(f => { el('r_'+f).value = s[f]; el('n_'+f).value = s[f]; }); }
+el('bGen').onclick = () => load(SAMPLES.genuine);
+el('bFake').onclick = () => load(SAMPLES.fake);
+
+function buildChart(){
+  const ab = el('axes').value.split(',').map(Number), a = ab[0], b = ab[1];
+  const g = [], k = [];
+  REF.forEach(r => { (r[4] === 1 ? k : g).push({x: r[a], y: r[b]}); });
+  if (chart) chart.destroy();
+  const ds = [
+    {label:'Genuine', data:g, backgroundColor:'rgba(52,211,153,.55)', pointRadius:3},
+    {label:'Fake', data:k, backgroundColor:'rgba(248,113,113,.6)', pointRadius:3}
+  ];
+  if (lastPt) ds.push({label:'Your note', data:[{x:lastPt[FEATS[a]], y:lastPt[FEATS[b]]}], backgroundColor:'#fbbf24', borderColor:'#ffffff', borderWidth:2, pointStyle:'star', pointRadius:14});
+  const axis = t => ({title:{display:true,text:t,color:'#94a3b8'},ticks:{color:'#94a3b8'},grid:{color:'rgba(255,255,255,.06)'}});
+  chart = new Chart(el('map'), {type:'scatter', data:{datasets:ds},
+    options:{responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#cbd5e1'}}},
+      scales:{x:axis(FEATS[a]), y:axis(FEATS[b])}}});
+}
+el('axes').onchange = buildChart;
+buildChart();
+
+function show(d, pt){
+  lastPt = pt;
+  const bad = d.verdict === 'Fake';
+  const gz = el('gauge');
+  gz.style.setProperty('--p', (d.p_fake*100).toFixed(1));
+  gz.style.setProperty('--gc', bad ? '#ef4444' : '#10b981');
+  el('gpct').textContent = (d.p_fake*100).toFixed(1) + '%';
+  const v = el('verdict');
+  v.textContent = bad ? 'FAKE NOTE DETECTED' : 'GENUINE NOTE';
+  v.className = 'verdict ' + (bad ? 'bad' : 'ok');
+  el('conf').textContent = 'Confidence ' + (d.confidence*100).toFixed(1) + '%';
+  const rb = el('risk');
+  rb.textContent = d.risk;
+  rb.className = 'badge ' + (d.risk.indexOf('Uncertain') === 0 ? 'b-warn' : (bad ? 'b-bad' : 'b-ok'));
+  el('similar').textContent = d.similar_fake + ' of the ' + d.k + ' most similar known notes were fake.';
+  el('result').classList.remove('hidden');
+  el('empty').classList.add('hidden');
+  buildChart();
+}
+
+el('scan').onclick = async () => {
+  const body = {};
+  FEATS.forEach(f => body[f] = parseFloat(el('n_'+f).value));
+  const btn = el('scan');
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span> Scanning...';
+  try {
+    const res = await fetch('{{ url_for("api_predict") }}', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.error || 'Something went wrong');
+    show(d, body);
+  } catch (e) { alert(e.message); }
+  finally { btn.disabled = false; btn.textContent = 'Scan note'; }
+};
+</script>
+{% endblock %}
+
+

@@ -1,0 +1,23 @@
+﻿{% extends "base.html" %}
+{% from "_macros.html" import icon, head %}
+{% block title %}Contact{% endblock %}
+{% block content %}
+{{ head('Contact us','Questions, feedback or a bug report? Send a message.','mail') }}
+<div class="container sect-s"><div class="grid2">
+ <div class="card reveal">
+  <form method="post">
+   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+   <label class="l" for="name">Name</label><input type="text" id="name" name="name" required value="{{ user['name'] if user and user['provider']!='guest' else '' }}">
+   <label class="l" for="email">Email</label><input type="email" id="email" name="email" required value="{{ user['email'] if user and user['provider']!='guest' else '' }}">
+   <label class="l" for="subject">Subject</label><input type="text" id="subject" name="subject" required>
+   <label class="l" for="message">Message</label><textarea id="message" name="message" required></textarea>
+   <button class="btn btn-primary" type="submit">Send message</button>
+  </form>
+ </div>
+ <div class="card reveal d1"><h3>Good to know</h3>
+  <p>Messages are saved to the project database so the project owner can read them.</p>
+  <p style="margin-top:10px">This is an educational project. If you believe you hold a counterfeit note, take it to your bank or the police.</p></div>
+</div></div>
+{% endblock %}
+
+
