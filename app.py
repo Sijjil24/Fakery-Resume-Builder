@@ -42,7 +42,7 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-change-me")
 app.config.update(SESSION_COOKIE_SAMESITE="Lax", MAX_CONTENT_LENGTH=8 * 1024 * 1024,
                   PERMANENT_SESSION_LIFETIME=timedelta(days=14))
-DB_PATH = os.environ.get("DB_PATH", os.path.join(BASE, "Fakery.db"))
+DB_PATH = os.environ.get("DB_PATH", "/tmp/Fakery.db" if os.environ.get("VERCEL") else os.path.join(BASE, "Fakery.db"))
 
 # ---------------- models + reference data ----------------
 model = joblib.load(os.path.join(BASE, "models", "banknote_model.joblib"))
